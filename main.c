@@ -1,11 +1,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
+#include <windows.h>
 
 void psh_run_loop(void);
-char *psh_read_line(
-    void); // TODO switch to a better implementation -> getline or something.
+char *psh_read_line(void); // TODO switch to a better implementation -> getline or something.
 char **psh_read_args(char *line);
+int psh_launch(char **args);
 int psh_execute(char **args);
 
 int main(int argc, char **argv) {
@@ -112,4 +114,14 @@ char **psh_read_args(char *line) {
 
   tokens[++position] = NULL;
   return tokens;
+}
+
+// TODO make this work on WINDOWS -> CreateProcess() and more....
+// ill basically need to encapsulate the args in a single string, might have to change thefunction above then.
+// used to launch a program, not a built-in! 
+int psh_launch(char **args){
+
+
+
+  return 1;
 }
