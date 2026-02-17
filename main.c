@@ -1,7 +1,15 @@
 #include <stdio.h>
+#include <stdlib.h>
 
-int main(){
-  printf("Hello world!");
+void psh_run_loop(void);
+char* psh_read_line();
+char** psh_read_args(char* line);
+int psh_execute(char** args);
+
+int main(int argc, char **argv){
+  // load config files, if any.
+  // ...
+
 
   //run command loop...
   printf("Hello world!");
