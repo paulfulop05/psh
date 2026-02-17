@@ -2,7 +2,7 @@
 #include <stdlib.h>
 
 void psh_run_loop(void);
-char *psh_read_line();
+char *psh_read_line(void);
 char **psh_read_args(char *line);
 int psh_execute(char **args);
 
@@ -11,7 +11,7 @@ int main(int argc, char **argv) {
   // ...
 
   // run command loop...
-  printf("Hello world!");
+  psh_run_loop();
 
   // perform any shutdown/cleanup...
 
@@ -40,6 +40,39 @@ void psh_run_loop(void) {
     free(line);
     free(args);
   } while (status);
+}
 
-  return;
+#define PSH_RL_BUFSIZE 1024
+// reads the content and returns it as a string
+char *psh_read_line(void) {
+  int bufsize = PSH_RL_BUFSIZE;
+  int position = -1;
+  char *buffer = malloc(sizeof(char) * bufsize);
+  int c = getchar(); // current character
+
+  if (!buffer) {
+    fprintf(stderr, "psh: some alloation error occured.");
+    exit(EXIT_FAILURE);
+  }
+
+  // the main idea is to read a char until we hit EOF or \n. If the bufsize is
+  // exceeded, we double its size.
+  while (c != EOF && c != '\n') {
+    c = getchar();
+
+    if (position >= bufsize) {
+      bufsize += PSH_RL_BUFSIZE;
+      buffer = realloc(buffer, bufsize);
+
+      if (!buffer) {
+        fprintf(stderr, "psh: some alloation error occured.");
+        exit(EXIT_FAILURE);
+      }
+    }
+
+    buffer[++position] = c;
+  }
+  
+  buffer[++position] = '\0';
+  return buffer; // no need to deallocate, that happens in the loop function
 }
