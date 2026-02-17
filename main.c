@@ -1,16 +1,31 @@
+#include <handleapi.h>
+#include <minwinbase.h>
+#include <processthreadsapi.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <synchapi.h>
 #include <unistd.h>
 #include <windows.h>
 
+// MAIN FUNCTIONS
 void psh_run_loop(void);
 char *psh_read_line(void); // TODO switch to a better implementation -> getline or something.
 char **psh_read_args(char *line);
-int psh_launch(char **args);
-int psh_execute(char **args);
+int psh_launch(int argc, char **args);
+int psh_execute(int argc, char **args);
 
-int main(int argc, char **argv) {
+// OTHER FUNCTIONS
+int count_args(char** args){
+  int cnt = 0;
+  while(args[cnt] != NULL)
+    ++cnt;
+
+  return cnt;
+}
+
+
+int main(int argc, char **args) {
   // load config files, if any.
   // ...
 
@@ -39,7 +54,7 @@ void psh_run_loop(void) {
     printf("> ");
     line = psh_read_line();
     args = psh_read_args(line);
-    status = psh_execute(args);
+    status = psh_execute(count_args(args), args);
 
     free(line);
     free(args);
@@ -116,12 +131,56 @@ char **psh_read_args(char *line) {
   return tokens;
 }
 
-// TODO make this work on WINDOWS -> CreateProcess() and more....
-// ill basically need to encapsulate the args in a single string, might have to change thefunction above then.
-// used to launch a program, not a built-in! 
-int psh_launch(char **args){
+#define PSH_CMD_BUFSIZE 1024
+// used to launch a program, not a built-in!
+int psh_launch(int argc, char **args){
+  // execvp is unix only, so i'll use functions from windows.h
+  // first I need to build a string separated by space using the args
+  int bufsize = PSH_RL_BUFSIZE, cmd_size = 0;
+  char *cmd = malloc(sizeof(char) * bufsize);
 
+  // transform the arguments into a single string command 
+  for(int i = 0; i < argc; ++i){
+    cmd_size += strlen(args[i]);
+    
+    if(cmd_size >= bufsize){
+      bufsize += PSH_CMD_BUFSIZE;
+      cmd = realloc(cmd, sizeof(char) * bufsize);
 
+      if(!cmd){
+        fprintf(stderr, "psh: some allocation error occured\n");
+        exit(EXIT_FAILURE);
+      }
+    }
+
+    strcat(cmd, args[i]);
+    cmd[cmd_size++] = ' ';
+  }
+  cmd[cmd_size] = '\0';
+
+  //execute the command using CreateProcess
+  //TODO understand this part better + comment it out
+  STARTUPINFO si;
+  PROCESS_INFORMATION pi;
+  ZeroMemory(&si, sizeof(si));
+  si.cb = sizeof(si);
+  ZeroMemory(&pi, sizeof(pi));
+
+  if(!CreateProcess(NULL, cmd, NULL, NULL, FALSE, 0, NULL, NULL, &si, &pi)){
+    fprintf(stderr, "CreateProcess failed: %lu\n", GetLastError());
+    exit(EXIT_FAILURE);
+  }
+
+  WaitForSingleObject(pi.hProcess, INFINITE);
+
+  CloseHandle(pi.hProcess);
+  CloseHandle(pi.hThread);
+
+  free(cmd);
+  return 1;
+}
+
+int psh_execute(int argc, char **args){
 
   return 1;
 }
