@@ -149,30 +149,49 @@ int psh_launch(char **args) {
   return 1;
 }
 
+// if the name of the program is actually a builtin function,
+// then look into the array of functions and execute the builtin
+// corresponding with the first argument provided
+// otherwise, laucnh the program
 int psh_execute(char **args) {
-  psh_launch(args);
-  return 1;
+  if(args[0] == NULL) return 1; // empty command was entered
+  
+  int bt_count = builtins_count();
+  for(int i = 0; i < bt_count; ++i){
+    // a builtin should beexecuted
+    if(!strcmp(args[0], builtin_str[i])){
+      return builtin_func[i](args); // order matters; position of function in this array has to match the one in builtin_str; maybe a struct would be more elegant (TODO)
+    }
+  }
+
+  return psh_launch(args); // the command was not found in the list of builtins => we launch the program
 }
 
 // IMPLEMENTATION FOR BUILTIN FUNCTIONS
 
+// change directory
 int psh_cd(char **agrs){
-  return 1;
+  return 1; 
 }
 
+
+// displays the help menu (builtins)
+// TODO add description for every builtin, display the description here as-well, add specific 'help <builtin>' command that shows the description for a certain builtin 
 int psh_help(char **args){
   printf("Paul Fulop's shell\n");
   printf("Type program names followed by arguments, hit enter and enjoy\n");
-  printf("The following comamnds are built-in:\n");
+  printf("The following comamnds are built-in:\n\n");
 
   int bt_count = builtins_count();
   for(int i = 0; i < bt_count; ++i){
     printf("%s\n", builtin_str[i]);
   }
-
+  
+  printf("\nThis is all for now :))\n\n");
   return 1;
 }
 
+// exits the shell
 int psh_exit(char **args){
   return 0; // this is exactly all I need here :))
 }
