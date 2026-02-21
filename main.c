@@ -18,6 +18,19 @@ int psh_execute(char **args);
 // OTHER FUNCTIONS
 int count_args(char **args);
 char *transform_command(char **args);
+int builtins_count();
+
+// BUILTINS
+// return the exit code
+// I need char **args for arguments
+// => builtin function signature: int funcName(char**) -> therefore I can use function pointers
+int psh_cd(char **args);
+int psh_help(char **args);
+int psh_exit(char **args);
+
+// List of built-in commands followed by their corresponding functions
+char *builtin_str[] = {"cd", "help", "exit"};
+int (*builtin_func[])(char**) = {psh_cd, psh_help, psh_exit};
 
 int main() {
   // run config files (if any)...
@@ -29,6 +42,8 @@ int main() {
 
   return 0;
 }
+
+// MAIN FUNCTIONS IMPLEMENTATION
 
 // basically the main function -> loop, parse, execute
 void psh_run_loop(void) {
@@ -74,8 +89,7 @@ char *psh_read_line(void) {
 
 #define PSH_TOKENS_BUFSIZE 64
 #define PSH_TOKEN_DELIMITER " \t\r\n\a"
-// tokenizes the input according to a delimiter (a space in my case, for
-// simplicity)
+// tokenizes the input
 char **psh_read_args(char *line) {
   int bufsize = PSH_TOKENS_BUFSIZE, position = 0;
   char **tokens = malloc(sizeof(char *) * bufsize);
@@ -140,6 +154,32 @@ int psh_execute(char **args) {
   return 1;
 }
 
+// IMPLEMENTATION FOR BUILTIN FUNCTIONS
+
+int psh_cd(char **agrs){
+  return 1;
+}
+
+int psh_help(char **args){
+  printf("Paul Fulop's shell\n");
+  printf("Type program names followed by arguments, hit enter and enjoy\n");
+  printf("The following comamnds are built-in:\n");
+
+  int bt_count = builtins_count();
+  for(int i = 0; i < bt_count; ++i){
+    printf("%s\n", builtin_str[i]);
+  }
+
+  return 1;
+}
+
+int psh_exit(char **args){
+  return 0; // this is exactly all I need here :))
+}
+
+
+// IMPLEMENTATION FOR OTHER FUNCTIONS
+//counts the number of arguments
 int count_args(char **args) {
   int cnt = 0;
   while (args[cnt] != NULL)
@@ -178,4 +218,9 @@ char *transform_command(char **args) {
 
   printf("%s\n", cmd); // debugging..
   return cmd;
+}
+
+// returns the amoutn of builtins I currently have
+int builtins_count(){
+  return sizeof(builtin_str) / sizeof(char *);
 }
