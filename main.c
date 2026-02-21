@@ -1,3 +1,4 @@
+#include <direct.h>
 #include <handleapi.h>
 #include <minwindef.h>
 #include <processthreadsapi.h>
@@ -23,14 +24,15 @@ int builtins_count();
 // BUILTINS
 // return the exit code
 // I need char **args for arguments
-// => builtin function signature: int funcName(char**) -> therefore I can use function pointers
+// => builtin function signature: int funcName(char**) -> therefore I can use
+// function pointers
 int psh_cd(char **args);
 int psh_help(char **args);
 int psh_exit(char **args);
 
 // List of built-in commands followed by their corresponding functions
 char *builtin_str[] = {"cd", "help", "exit"};
-int (*builtin_func[])(char**) = {psh_cd, psh_help, psh_exit};
+int (*builtin_func[])(char **) = {psh_cd, psh_help, psh_exit};
 
 int main() {
   // run config files (if any)...
@@ -43,9 +45,11 @@ int main() {
   return 0;
 }
 
-// MAIN FUNCTIONS IMPLEMENTATION
+// IMPLEMENTATION FOR THE MAIN FUNCTIONS OF THE SHELL
 
 // basically the main function -> loop, parse, execute
+// runs as long as the builtin or the program to run returns an exit code
+// different from 0
 void psh_run_loop(void) {
   char *line;  // the string interpretation of the program
   char **args; // arguments of the program
@@ -154,51 +158,82 @@ int psh_launch(char **args) {
 // corresponding with the first argument provided
 // otherwise, laucnh the program
 int psh_execute(char **args) {
-  if(args[0] == NULL) return 1; // empty command was entered
-  
+  if (args[0] == NULL)
+    return 1; // empty command was entered
+
   int bt_count = builtins_count();
-  for(int i = 0; i < bt_count; ++i){
+  for (int i = 0; i < bt_count; ++i) {
     // a builtin should beexecuted
-    if(!strcmp(args[0], builtin_str[i])){
-      return builtin_func[i](args); // order matters; position of function in this array has to match the one in builtin_str; maybe a struct would be more elegant (TODO)
+    if (!strcmp(args[0], builtin_str[i])) {
+      return builtin_func[i](
+          args); // order matters; position of function in this array has to
+                 // match the one in builtin_str; maybe a struct would be more
+                 // elegant (TODO)
     }
   }
 
-  return psh_launch(args); // the command was not found in the list of builtins => we launch the program
+  return psh_launch(args); // the command was not found in the list of builtins
+                           // => we launch the program
 }
 
 // IMPLEMENTATION FOR BUILTIN FUNCTIONS
 
 // change directory
-int psh_cd(char **agrs){
-  return 1; 
+int psh_cd(char **args) {
+  // if only cd is present, then show the current path
+  if (args[1] == NULL) {
+    char *cwd =
+        _getcwd(NULL, 0); // allocates required amount of memory automatically,
+                          // but freeing it is done manually
+
+    if (cwd) {
+      printf("Current directory: %s\n\n", cwd);
+      free(cwd);
+    } else {
+      perror("cd");
+    }
+
+    return 1;
+  }
+
+  if (!strcmp(args[1], "~"))
+    args[1] = getenv("USERPROFILE"); // cd ~ -> I redirect to the home directory
+
+  // otherwise just change directory if possible
+  if (_chdir(args[1]) != 0)
+    perror("cd");
+
+  // return 1 anyway because even if an erorr occured it's likely from the input
+  // and the shell should still be looping
+  return 1;
 }
 
-
 // displays the help menu (builtins)
-// TODO add description for every builtin, display the description here as-well, add specific 'help <builtin>' command that shows the description for a certain builtin 
-int psh_help(char **args){
+// TODO add description for every builtin, display the description here as-well,
+// add specific 'help <builtin>' command that shows the description for a
+// certain builtin
+int psh_help(char **args) {
   printf("Paul Fulop's shell\n");
   printf("Type program names followed by arguments, hit enter and enjoy\n");
   printf("The following comamnds are built-in:\n\n");
 
   int bt_count = builtins_count();
-  for(int i = 0; i < bt_count; ++i){
+  for (int i = 0; i < bt_count; ++i) {
     printf("%s\n", builtin_str[i]);
   }
-  
+
   printf("\nThis is all for now :))\n\n");
   return 1;
 }
 
 // exits the shell
-int psh_exit(char **args){
+int psh_exit(char **args) {
   return 0; // this is exactly all I need here :))
 }
 
-
 // IMPLEMENTATION FOR OTHER FUNCTIONS
-//counts the number of arguments
+
+// counts the number of arguments
 int count_args(char **args) {
   int cnt = 0;
   while (args[cnt] != NULL)
@@ -240,6 +275,4 @@ char *transform_command(char **args) {
 }
 
 // returns the amoutn of builtins I currently have
-int builtins_count(){
-  return sizeof(builtin_str) / sizeof(char *);
-}
+int builtins_count() { return sizeof(builtin_str) / sizeof(char *); }
